@@ -9,6 +9,7 @@
 #include <QtAndroidExtras/QAndroidJniObject>
 #include <QApplication>
 #include <QDockWidget>
+#include <QToolButton>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QResizeEvent>
@@ -37,6 +38,13 @@ void MainWindow::setupAndroidUi()
     m_androidComponentsDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::BottomDockWidgetArea);
     m_androidComponentsDock->setFeatures(QDockWidget::DockWidgetClosable);
     m_androidComponentsDock->setWidget(m_sidepanel);
+    // Large touch-friendly close control, independent of the dock title decoration.
+    auto closeParts = new QToolButton(m_androidComponentsDock);
+    closeParts->setText(QString::fromUtf8("×"));
+    closeParts->setToolTip(tr("Close components panel"));
+    closeParts->setMinimumSize(44, 44);
+    connect(closeParts, &QToolButton::clicked, m_androidComponentsDock, &QDockWidget::hide);
+    m_androidComponentsDock->setTitleBarWidget(closeParts);
     addDockWidget(Qt::LeftDockWidgetArea, m_androidComponentsDock);
     m_androidComponentsDock->hide();
     auto parts = m_androidComponentsDock->toggleViewAction();
@@ -59,6 +67,10 @@ void MainWindow::setupAndroidUi()
     });
     connect(editor, &QAction::triggered, this, [this] {
         m_circuitW->hide(); m_editor->show();
+        m_androidComponentsDock->hide();
+    });
+    auto closePanel = m_androidBar->addAction(tr("Close panel"));
+    connect(closePanel, &QAction::triggered, this, [this] {
         m_androidComponentsDock->hide();
     });
     auto output = m_androidBar->addAction(QIcon(":/serialterm.png"), tr("Output"));
