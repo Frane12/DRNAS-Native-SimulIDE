@@ -10,7 +10,6 @@ jobs:
   android:
     runs-on: ubuntu-22.04
     timeout-minutes: 90
-    env:
     steps:
       - uses: actions/checkout@v4
       - name: Install Qt 5.15 Android ARM64
