@@ -28,9 +28,14 @@ protected:
             button->setStyleSheet("font-size:16px; font-weight:600;");
             QObject::connect(button, &QPushButton::clicked, dialog, &QWidget::close);
             if (dialog->layout()) {
+                const bool fixedHeight = dialog->minimumHeight() == dialog->maximumHeight();
+                const int previousHeight = dialog->height();
                 const auto margins = dialog->layout()->contentsMargins();
                 dialog->layout()->setContentsMargins(margins.left(), margins.top()+56,
                                                      margins.right(), margins.bottom());
+                // Property dialogs use a fixed content height upstream. Make
+                // room for the header instead of covering their final row.
+                if (fixedHeight) dialog->setFixedHeight(previousHeight + 56);
             }
             button->move(qMax(0, dialog->width()-124), 4);
             button->show(); button->raise();
@@ -54,6 +59,7 @@ protected:
 
 void installDrnasDialogControls()
 {
+    qApp->setStyleSheet(qApp->styleSheet() + QStringLiteral("QTabBar::close-button { width:32px; height:32px; }"));
     auto controls = new DrnasDialogControls(qApp);
     qApp->installEventFilter(controls);
 }
