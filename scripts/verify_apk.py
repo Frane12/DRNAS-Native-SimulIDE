@@ -24,8 +24,11 @@ def audit(apk, readelf, system_dir):
             raise ValueError('Missing upstream runtime data assets')
         if 'assets/drnas_icon.png' not in z.namelist():
             raise ValueError('Missing launcher/welcome brand asset')
-        if b'Lorg/drnas/simulide/DrnasActivity;' not in z.read('classes.dex'):
-            raise ValueError('Fullscreen Android activity absent from DEX')
+        # DEX stores type descriptors as MUTF-8 string_data; some Android build
+        # pipelines place application classes in secondary DEX files. Check all.
+        dex_files = [n for n in z.namelist() if re.fullmatch(r'classes(?:[2-9][0-9]*)?\.dex', n)]
+        if not any(b'Lorg/drnas/simulide/DrnasActivity;' in z.read(n) for n in dex_files):
+            raise ValueError('Fullscreen Android activity absent from all DEX files: ' + ', '.join(dex_files))
         libs = [n for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')]
         if not libs:
             raise ValueError('APK has no native libraries')
