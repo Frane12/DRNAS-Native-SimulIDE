@@ -10,6 +10,8 @@
 #include <QApplication>
 #include <QDockWidget>
 #include <QToolButton>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QResizeEvent>
@@ -22,8 +24,11 @@
 #include <QActionGroup>
 #include <QtMath>
 
+void installDrnasDialogControls();
+
 void MainWindow::setupAndroidUi()
 {
+    installDrnasDialogControls();
     m_androidBar = new QToolBar(tr("Mobile controls"), this);
     m_androidBar->setObjectName("drnasMobileControls");
     m_androidBar->setMovable(false);
@@ -39,12 +44,18 @@ void MainWindow::setupAndroidUi()
     m_androidComponentsDock->setFeatures(QDockWidget::DockWidgetClosable);
     m_androidComponentsDock->setWidget(m_sidepanel);
     // Large touch-friendly close control, independent of the dock title decoration.
-    auto closeParts = new QToolButton(m_androidComponentsDock);
-    closeParts->setText(QString::fromUtf8("×"));
+    auto dockTitle = new QWidget(m_androidComponentsDock);
+    auto dockTitleLayout = new QHBoxLayout(dockTitle);
+    dockTitleLayout->setContentsMargins(8, 2, 4, 2);
+    dockTitleLayout->addWidget(new QLabel(tr("Components / Files"), dockTitle));
+    dockTitleLayout->addStretch();
+    auto closeParts = new QToolButton(dockTitle);
+    closeParts->setText(QString::fromUtf8("× Close"));
     closeParts->setToolTip(tr("Close components panel"));
     closeParts->setMinimumSize(44, 44);
     connect(closeParts, &QToolButton::clicked, m_androidComponentsDock, &QDockWidget::hide);
-    m_androidComponentsDock->setTitleBarWidget(closeParts);
+    dockTitleLayout->addWidget(closeParts);
+    m_androidComponentsDock->setTitleBarWidget(dockTitle);
     addDockWidget(Qt::LeftDockWidgetArea, m_androidComponentsDock);
     m_androidComponentsDock->hide();
     auto parts = m_androidComponentsDock->toggleViewAction();
@@ -55,22 +66,16 @@ void MainWindow::setupAndroidUi()
         if (visible) QTimer::singleShot(0, this, [this] { applyAndroidLayout(true); });
     });
 
-    auto modes = new QActionGroup(this);
     auto circuit = m_androidBar->addAction(QIcon(":/zoomfit.svg"), tr("Circuit"));
     auto editor = m_androidBar->addAction(QIcon(":/new.svg"), tr("Editor"));
-    circuit->setCheckable(true); editor->setCheckable(true);
-    modes->addAction(circuit); modes->addAction(editor);
-    circuit->setChecked(true);
+    editor->setCheckable(true);
     m_editor->hide();
-    connect(circuit, &QAction::triggered, this, [this] {
+    connect(circuit, &QAction::triggered, this, [this, editor] {
+        editor->setChecked(false);
         m_editor->hide(); m_circuitW->show();
     });
-    connect(editor, &QAction::triggered, this, [this] {
-        m_circuitW->hide(); m_editor->show();
-        m_androidComponentsDock->hide();
-    });
-    auto closePanel = m_androidBar->addAction(tr("Close panel"));
-    connect(closePanel, &QAction::triggered, this, [this] {
+    connect(editor, &QAction::triggered, this, [this](bool checked) {
+        m_circuitW->setVisible(!checked); m_editor->setVisible(checked);
         m_androidComponentsDock->hide();
     });
     auto output = m_androidBar->addAction(QIcon(":/serialterm.png"), tr("Output"));
@@ -81,6 +86,13 @@ void MainWindow::setupAndroidUi()
         circuit->trigger();
         lowerPanel->setVisible(visible);
         if (visible) m_circuitW->splitter()->setSizes({qMax(120, height()*3/4), qMax(100, height()/4)});
+    });
+
+    auto closePanels = m_androidBar->addAction(QString::fromUtf8("× Close panels"));
+    connect(closePanels, &QAction::triggered, this, [this, circuit, output] {
+        m_androidComponentsDock->hide();
+        output->setChecked(false);
+        circuit->trigger();
     });
 
     m_searchComponent->setFixedHeight(44);

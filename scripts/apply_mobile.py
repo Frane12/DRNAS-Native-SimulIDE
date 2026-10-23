@@ -22,8 +22,8 @@ def replace(path, old, new):
 
 
 replace('SimulIDE.pri', '    OS = Android\n', '    OS = Android\n    QT += androidextras\n')
-replace('SimulIDE.pri', '    ANDROID_VERSION_NAME = 0.1.0', '    ANDROID_VERSION_NAME = 0.2.0')
-replace('SimulIDE.pri', '    ANDROID_VERSION_CODE = 1\n', '    ANDROID_VERSION_CODE = 2\n')
+replace('SimulIDE.pri', '    ANDROID_VERSION_NAME = 0.1.0', '    ANDROID_VERSION_NAME = 0.3.0')
+replace('SimulIDE.pri', '    ANDROID_VERSION_CODE = 1\n', '    ANDROID_VERSION_CODE = 3\n')
 replace('src/mainwindow.h', '        void hideGui();', '''        void hideGui();
 #ifdef Q_OS_ANDROID
         void setupAndroidUi();
@@ -80,9 +80,13 @@ replace('src/gui/circuitwidget/circuitview.cpp', '''    centerOn( 0, 0 );
 }''')
 replace('src/main.cpp', '#include <QDirIterator>', '''#include <QDirIterator>
 #include <QVBoxLayout>
+#include <QtAndroidExtras/QtAndroid>
 #include <QLabel>
 #include <QTimer>''')
 replace('src/main.cpp', '    QApplication app( argc, argv );', '''#ifdef Q_OS_ANDROID
+    const jfloat displayScale = QtAndroid::androidActivity().callMethod<jfloat>("chooseDisplayScale", "()F");
+    const qreal safeScale = qBound(qreal(0.6), qreal(displayScale), qreal(1.4));
+    qputenv("QT_SCALE_FACTOR", QByteArray::number(safeScale));
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 #endif

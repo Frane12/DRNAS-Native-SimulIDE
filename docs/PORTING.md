@@ -76,3 +76,25 @@ This is an experimental debug build, not a Play Store release configuration.
 Validation must include portrait ↔ landscape, reopening from background, showing
 and dismissing the keyboard, opening/closing all four mobile controls, and
 checking that the camera cutout does not cover buttons. These require a device.
+
+## Mobile 0.3.0 — startup display and dismissible windows
+
+The Android startup dialog appears before QApplication creates its screens. It
+shows the estimated logical workspace dimensions and a 60–140% scale slider,
+with **Apply and open**, **Use saved**, and **Automatic**. The selected scale is
+applied through QT_SCALE_FACTOR for this launch, while Android retains its
+physical screen mode and aspect ratio. The camera-safe-area option can remove
+the reserved top strip; disabling it may put controls near a camera cutout.
+The setting is persisted in private Android preferences.
+
+All Qt dialogs receive a visible 120×48 **× Close** button. Closing still uses
+upstream closeEvent handling. The components dock has a labelled **× Close**
+button, **Editor** toggles back to the circuit, **Output** is dismissible with its
+toggle, and **× Close panels** returns to an unobstructed circuit view.
+Android 11+ immersive mode also uses WindowInsetsController when available.
+
+Device checks: change scale at startup; cancel and confirm display selection;
+rotate with an unsaved circuit; open/close settings, component properties and
+instruments; open/close editor/output/components; compare safe-area modes and
+verify a saved circuit remains intact. Compilation and APK audits do not verify
+these interactions.
