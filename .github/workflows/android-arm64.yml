@@ -1,62 +1,106 @@
-name: Android ARM64 experimental build
+name: SimulIDE ARM64 dependencies to APK
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
       - '.github/workflows/android-arm64.yml'
+      - 'scripts/**'
       - 'docs/PORTING.md'
+  pull_request:
+    paths:
+      - '.github/workflows/android-arm64.yml'
+      - 'scripts/**'
+permissions:
+  contents: read
+concurrency:
+  group: simulide-arm64-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  android:
+  preflight:
+    name: 1 - Source and pipeline preflight
     runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect Qt package availability
-        shell: bash
+      - name: Check scripts and pinned source
         run: |
-          python3 -m pip install --user aqtinstall==3.3.0
-          python3 -m aqt list-qt linux android --arch 5.15.2
-          python3 -m aqt list-qt linux android --modules 5.15.2 android_arm64_v8a
-      - name: Install Qt 5.15 Android ARM64
-        uses: jurplel/install-qt-action@v4
+          bash -n scripts/android.sh
+          python3 -m py_compile scripts/prepare_source.py scripts/verify_apk.py
+          bash scripts/android.sh source
+      - name: Preserve source provenance
+        uses: actions/upload-artifact@v4
         with:
-          version: '5.15.2'
-          host: linux
-          target: android
-          arch: android_arm64_v8a
-          modules: 'qtsvg qtmultimedia qtserialport'
-          cache: true
-      - name: Install matching Android NDK
-        shell: bash
+          name: simulide-source-${{ github.sha }}
+          path: logs/source.txt
+          if-no-files-found: error
+
+  android:
+    name: 2 - Dependencies, compile, package and audit
+    needs: preflight
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      # Qt 5.15.2's Gradle/Android Gradle Plugin requires Java 8.
+      # sdkmanager is separately run with the runner's Java 17.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Install host dependencies
         run: |
-          set -euxo pipefail
-          echo "y" | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_HOME}" "ndk;21.3.6528147" "platforms;android-29" "build-tools;29.0.3"
-          echo "ANDROID_NDK_ROOT=${ANDROID_HOME}/ndk/21.3.6528147" >> "${GITHUB_ENV}"
-          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/21.3.6528147" >> "${GITHUB_ENV}"
-      - name: Fetch pinned original SimulIDE source
-        run: |
-          git clone https://github.com/Arcachofo/SimulIDE-dev.git upstream
-          git -C upstream checkout a7d9fc9d3b8991b3b376cbd66fb0abb998f60797
-      - name: Configure and compile original Qt application
-        id: compile
-        shell: bash
-        run: |
-          set -o pipefail
-          mkdir -p logs
-          cd upstream/build_XX
-          qmake SimulIDE_Build.pro -spec android-clang CONFIG+=debug 2>&1 | tee ../../logs/qmake.log
-          make -j2 2>&1 | tee ../../logs/make.log
-      - name: Inspect build products
-        if: always()
-        run: |
-          mkdir -p logs
-          find upstream -type f \( -name '*.so' -o -name '*.apk' \) -print > logs/products.txt || true
-          cat logs/products.txt
-      - name: Upload diagnostics
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgl1 libxkbcommon-x11-0 libxcb-xinerama0 libxcb-cursor0 libegl1 unzip
+          python3 -m pip install aqtinstall==3.3.0
+      - name: Restore pinned Qt dependency cache
+        id: qt-cache
+        uses: actions/cache@v4
+        with:
+          path: Qt
+          key: simulide-qt-${{ runner.os }}-${{ hashFiles('scripts/android.env', 'scripts/android.sh') }}
+      - name: 2a - Resolve Qt packages and missing source dependencies
+        run: bash scripts/android.sh dependencies 2>&1 | tee logs-dependencies.txt
+      - name: 2b - Preflight compiler, SDK, Qt modules and ARM64 linker
+        run: bash scripts/android.sh toolchain 2>&1 | tee logs-toolchain.txt
+      - name: 3a - Fetch source and apply checked Android adaptations
+        run: bash scripts/android.sh source 2>&1 | tee logs-source.txt
+      - name: 3b - Compile SimulIDE ARM64 and validate native product
+        run: bash scripts/android.sh compile 2>&1 | tee logs-compile.txt
+      - name: 4a - Package debug APK with bundled Qt runtime
+        run: bash scripts/android.sh package 2>&1 | tee logs-package.txt
+      - name: 4b - Verify APK signature, ABI, ELF dependencies and resources
+        run: bash scripts/android.sh verify 2>&1 | tee logs-verify.txt
+      - name: Upload verified APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DRNAS-SimulIDE-Android-ARM64-debug-${{ github.run_number }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve diagnostics at every failure point
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: simulide-android-arm64-diagnostics
-          path: logs/
+          name: simulide-arm64-diagnostics-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            logs/
+            logs-*.txt
+            build/Makefile
+            build/*deployment-settings.json
+            build/android-build/build/outputs/logs/
           if-no-files-found: warn
+      - name: Build summary
+        if: always()
+        run: |
+          printf '## SimulIDE Android ARM64\n\nResult: %s\n\n' '${{ job.status }}' >> "$GITHUB_STEP_SUMMARY"
+          if test -f dist/build-info.txt; then cat dist/build-info.txt >> "$GITHUB_STEP_SUMMARY"; fi
+          printf '\nA verified APK is uploaded only after signature and ARM64 dependency checks pass. Device simulation tests are separate.\n' >> "$GITHUB_STEP_SUMMARY"
