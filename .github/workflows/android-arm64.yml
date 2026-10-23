@@ -63,7 +63,7 @@ jobs:
           python3 -m pip install aqtinstall==3.3.0
       - name: Restore pinned Qt dependency cache
         id: qt-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: Qt
           key: simulide-qt-${{ runner.os }}-${{ hashFiles('scripts/android.env', 'scripts/android.sh') }}
@@ -71,6 +71,12 @@ jobs:
         run: bash scripts/android.sh dependencies 2>&1 | tee logs-dependencies.txt
       - name: 2b - Preflight compiler, SDK, Qt modules and ARM64 linker
         run: bash scripts/android.sh toolchain 2>&1 | tee logs-toolchain.txt
+      - name: Save validated dependencies before compiling the application
+        if: steps.qt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: Qt
+          key: ${{ steps.qt-cache.outputs.cache-primary-key }}
       - name: 3a - Fetch source and apply checked Android adaptations
         run: bash scripts/android.sh source 2>&1 | tee logs-source.txt
       - name: 3b - Compile SimulIDE ARM64 and validate native product
