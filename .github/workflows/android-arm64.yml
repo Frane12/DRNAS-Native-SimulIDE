@@ -6,11 +6,15 @@ on:
     paths:
       - '.github/workflows/android-arm64.yml'
       - 'scripts/**'
+      - 'mobile/**'
+      - 'android/**'
       - 'docs/PORTING.md'
   pull_request:
     paths:
       - '.github/workflows/android-arm64.yml'
       - 'scripts/**'
+      - 'mobile/**'
+      - 'android/**'
 permissions:
   contents: read
 concurrency:
@@ -31,7 +35,7 @@ jobs:
       - name: Check scripts and pinned source
         run: |
           bash -n scripts/android.sh
-          python3 -m py_compile scripts/prepare_source.py scripts/verify_apk.py
+          python3 -m py_compile scripts/prepare_source.py scripts/apply_mobile.py scripts/verify_apk.py
           bash scripts/android.sh source
       - name: Preserve source provenance
         uses: actions/upload-artifact@v4

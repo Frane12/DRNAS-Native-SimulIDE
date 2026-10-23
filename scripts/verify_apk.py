@@ -22,12 +22,16 @@ def audit(apk, readelf, system_dir):
                 raise ValueError(f'Missing {name}')
         if 'assets/data/codeeditor/compilers/default.xml' not in z.namelist():
             raise ValueError('Missing upstream runtime data assets')
+        if 'assets/drnas_icon.png' not in z.namelist():
+            raise ValueError('Missing launcher/welcome brand asset')
+        if b'Lorg/drnas/simulide/DrnasActivity;' not in z.read('classes.dex'):
+            raise ValueError('Fullscreen Android activity absent from DEX')
         libs = [n for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')]
         if not libs:
             raise ValueError('APK has no native libraries')
         available = {Path(n).name for n in libs}
         required = ['libsimulide', 'libQt5Core_', 'libQt5Gui_', 'libQt5Widgets_',
-                    'libQt5Svg_', 'libQt5Multimedia_', 'libQt5SerialPort_',
+                    'libQt5Svg_', 'libQt5Multimedia_', 'libQt5SerialPort_', 'libQt5AndroidExtras_',
                     'libplugins_platforms_qtforandroid_']
         for prefix in required:
             if not any(n.startswith(prefix) for n in available):

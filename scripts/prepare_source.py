@@ -82,3 +82,7 @@ if marker not in text:
     text = text.replace(anchor, anchor + bootstrap)
     main.write_text(text)
 print(f'Packaged {sum(p.is_file() for p in assets.rglob("*"))} runtime data assets.')
+
+# Keep UI adaptations separate from source/dependency preparation.
+import subprocess
+subprocess.run([sys.executable, str(Path(__file__).with_name('apply_mobile.py')), str(root)], check=True)

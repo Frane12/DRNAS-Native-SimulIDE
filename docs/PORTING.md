@@ -55,3 +55,24 @@ This is an experimental debug build, not a Play Store release configuration.
 - Place voltage source, resistor and LED; connect and run simulation.
 - Save and reopen the circuit in an Android-accessible location.
 - Test built-in MCU simulation separately from unavailable desktop QEMU.
+
+## Mobile display build 0.2.0
+
+- Launcher name: **DRNAS SimulIDE**. The adaptive icon is a redesigned derivative
+  of the upstream circuit-board mark; the opening screen says **DRNAS EMU** and
+  **SimulIDE**. The Android package and private data path stay compatible with
+  the previous build.
+- Immersive fullscreen hides status/navigation bars. Android edge swipes can
+  reveal system controls. Camera cutout insets protect the app's controls.
+- Android owns rotation without Activity recreation; the circuit remains loaded.
+  The components/files dock moves left in landscape and below in portrait.
+- The **Components**, **Circuit**, **Editor** and **Output** controls replace the
+  cramped three-column startup arrangement. The editor and output start closed.
+- Font scale is 1.35 in logical pixels, toolbar icons are 30 px, and main touch
+  targets are 44 px or larger. Qt handles device density independently.
+- Start/pause and +/− zoom precede the remaining circuit toolbar actions. A
+  two-finger pinch also zooms, and rotation keeps the viewport's center.
+
+Validation must include portrait ↔ landscape, reopening from background, showing
+and dismissing the keyboard, opening/closing all four mobile controls, and
+checking that the camera cutout does not cover buttons. These require a device.

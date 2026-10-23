@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="drnas_background">#170844</color>
+    <style name="DrnasTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">@drawable/drnas_launch</item>
+        <item name="android:colorAccent">#6D42CF</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">#170844</item>
+        <item name="android:statusBarColor">#170844</item>
+    </style>
+</resources>
