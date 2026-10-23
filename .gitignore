@@ -6,3 +6,11 @@ build/
 .idea/
 local.properties
 *.log
+Qt/
+upstream/
+deps/
+candidate/
+dist/
+logs/
+logs-*.txt
+__pycache__/
