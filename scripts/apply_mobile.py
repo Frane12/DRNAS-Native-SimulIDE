@@ -35,13 +35,12 @@ replace('src/mainwindow.h', '        void closeEvent( QCloseEvent* event );', ''
 replace('src/mainwindow.h', '        void createWidgets();', '''        void createWidgets();
 #ifdef Q_OS_ANDROID
         void applyAndroidLayout(bool force = false);
-        class QDockWidget* m_androidComponentsDock = nullptr;
+        QDockWidget* m_androidComponentsDock = nullptr;
         QToolBar* m_androidBar = nullptr;
         bool m_androidLandscape = false;
 #endif''')
 # Forward-declare globally, never accidentally declare MainWindow::QDockWidget.
 replace('src/mainwindow.h', 'class ComponentList;', 'class QDockWidget;\nclass QToolBar;\nclass ComponentList;')
-replace('src/mainwindow.h', '        class QDockWidget* m_androidComponentsDock', '        QDockWidget* m_androidComponentsDock')
 replace('src/mainwindow.cpp', '    setFontScale( scale );', '''#ifdef Q_OS_ANDROID
     scale = 1.35f; // logical pixels; Android/Qt already supplies display density
 #endif
