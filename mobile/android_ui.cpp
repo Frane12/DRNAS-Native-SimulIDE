@@ -90,6 +90,7 @@ void MainWindow::setupAndroidUi()
     m_sidepanel->setStyleSheet("QTabBar::tab { min-height:40px; min-width:60px; }");
     m_components->setIconSize(QSize(32, 28));
     m_components->setIndentation(20);
+    m_sidepanel->setStyleSheet(m_sidepanel->styleSheet() + QStringLiteral("QScrollBar:vertical { width: 24px; background: #e6e6e6; } QScrollBar::handle:vertical { background: #9098a2; min-height: 56px; border-radius: 7px; margin: 2px; } QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; } QScrollBar:horizontal { height: 24px; background: #e6e6e6; } QScrollBar::handle:horizontal { background: #9098a2; min-width: 56px; border-radius: 7px; margin: 2px; } QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }"));
     for (auto bar : findChildren<QToolBar*>()) {
         if (bar == m_androidBar) continue;
         bar->setIconSize(QSize(30, 30));
