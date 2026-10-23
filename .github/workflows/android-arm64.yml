@@ -12,6 +12,12 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+      - name: Inspect Qt package availability
+        shell: bash
+        run: |
+          python3 -m pip install --user aqtinstall==3.3.0
+          python3 -m aqt list-qt linux android --arch 5.15.2
+          python3 -m aqt list-qt linux android --modules 5.15.2 android_arm64_v8a
       - name: Install Qt 5.15 Android ARM64
         uses: jurplel/install-qt-action@v4
         with:
