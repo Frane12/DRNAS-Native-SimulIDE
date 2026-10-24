@@ -157,6 +157,7 @@ bool CircuitView::androidWireEvent(QMouseEvent* event)
     if (release && m_androidNewWireGesture
         && (event->pos()-m_androidWirePress).manhattanLength() < QApplication::startDragDistance()) {
         m_androidWireGesture = false;
+        if (m_androidPinMarker) m_androidPinMarker->hide();
         event->accept(); return true;
     }
     if (m_circuit->is_constarted()) {
@@ -176,7 +177,10 @@ bool CircuitView::androidWireEvent(QMouseEvent* event)
             }
         }
     }
-    if (release) m_androidWireGesture = false;
+    if (release) {
+        m_androidWireGesture = false;
+        if (m_androidPinMarker) m_androidPinMarker->hide();
+    }
     event->accept();
     return true;
 }
