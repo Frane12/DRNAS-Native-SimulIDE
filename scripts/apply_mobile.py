@@ -23,8 +23,8 @@ def replace(path, old, new):
 
 
 replace('SimulIDE.pri', '    OS = Android\n', '    OS = Android\n    QT += androidextras\n')
-replace('SimulIDE.pri', '    ANDROID_VERSION_NAME = 0.1.0', '    ANDROID_VERSION_NAME = 0.5.0')
-replace('SimulIDE.pri', '    ANDROID_VERSION_CODE = 1\n', '    ANDROID_VERSION_CODE = 5\n')
+replace('SimulIDE.pri', '    ANDROID_VERSION_NAME = 0.1.0', '    ANDROID_VERSION_NAME = 0.6.0')
+replace('SimulIDE.pri', '    ANDROID_VERSION_CODE = 1\n', '    ANDROID_VERSION_CODE = 6\n')
 replace('src/mainwindow.h', '        void hideGui();', '''        void hideGui();
 #ifdef Q_OS_ANDROID
         void setupAndroidUi();
@@ -56,6 +56,12 @@ restore = '''    restoreGeometry( m_settings->value("geometry" ).toByteArray());
 replace('src/mainwindow.cpp', restore, '#ifndef Q_OS_ANDROID\n' + restore + '\n#endif')
 replace('src/gui/circuitwidget/circuitwidget.cpp', '    powerCircAct->setStatusTip(tr("Start Simulation"));', '''    powerCircAct->setObjectName("drnasStartSimulation");
     powerCircAct->setStatusTip(tr("Start Simulation"));''')
+for action, name in [('zoomFitAct', 'drnasZoomFit'), ('zoomSelAct', 'drnasZoomSelected')]:
+    anchor = f'    {action}->setStatusTip('
+    # Anchor the exact original status line without depending on translated text.
+    path = root / 'src/gui/circuitwidget/circuitwidget.cpp'
+    line = next(line for line in path.read_text().splitlines() if line.startswith(anchor))
+    replace(str(path), line, f'    {action}->setObjectName("{name}");\n' + line)
 replace('src/gui/circuitwidget/circuitwidget.cpp', '    pauseSimAct->setStatusTip(tr("Pause Simulation"));', '''    pauseSimAct->setObjectName("drnasPauseSimulation");
     pauseSimAct->setStatusTip(tr("Pause Simulation"));''')
 replace('src/gui/circuitwidget/circuitview.h', '        void clear();', '''        void clear();

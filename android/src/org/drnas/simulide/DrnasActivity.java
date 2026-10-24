@@ -21,7 +21,7 @@ import org.qtproject.qt5.android.bindings.QtActivity;
 /** Fullscreen Qt host; Android continues to handle rotation without restarting Qt. */
 public class DrnasActivity extends QtActivity {
     private volatile int insetLeft, insetTop, insetRight, insetBottom;
-    private volatile boolean useSafeArea = true;
+    private volatile boolean useSafeArea = false;
 
     /** Called on the Qt main thread BEFORE QApplication creates any screen. */
     public float chooseDisplayScale() {
@@ -30,7 +30,7 @@ public class DrnasActivity extends QtActivity {
         if (Float.isNaN(saved) || Float.isInfinite(saved)) saved = 1.0f;
         final float initial = Math.max(0.6f, Math.min(1.4f, saved));
         final float[] selected = {initial};
-        useSafeArea = prefs.getBoolean("safeArea", true);
+        useSafeArea = !prefs.getBoolean("fitScreen", true);
         // Never wait on the Android UI thread itself.
         if (Looper.myLooper() == Looper.getMainLooper()) return initial;
         final CountDownLatch ready = new CountDownLatch(1);
@@ -67,22 +67,22 @@ public class DrnasActivity extends QtActivity {
             });
             update.run();
             CheckBox safe = new CheckBox(this);
-            safe.setText("Keep controls clear of the camera cutout");
+            safe.setText("Fit entire screen (including camera area)");
             safe.setTextSize(16);
-            safe.setChecked(useSafeArea);
+            safe.setChecked(!useSafeArea);
             body.addView(safe);
             AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("DRNAS EMU · Display")
                 .setView(body)
                 .setPositiveButton("Apply and open", (d, which) -> {
-                    useSafeArea = safe.isChecked();
-                    prefs.edit().putFloat("scale", selected[0]).putBoolean("safeArea", useSafeArea).apply();
+                    useSafeArea = !safe.isChecked();
+                    prefs.edit().putFloat("scale", selected[0]).putBoolean("fitScreen", !useSafeArea).apply();
                     ready.countDown();
                 })
                 .setNegativeButton("Use saved", (d, which) -> { selected[0] = initial; ready.countDown(); })
                 .setNeutralButton("Automatic", (d, which) -> {
-                    selected[0] = 1.0f; useSafeArea = true;
-                    prefs.edit().putFloat("scale", 1.0f).putBoolean("safeArea", true).apply();
+                    selected[0] = 1.0f; useSafeArea = false;
+                    prefs.edit().putFloat("scale", 1.0f).putBoolean("fitScreen", true).apply();
                     ready.countDown();
                 })
                 .create();
@@ -114,6 +114,7 @@ public class DrnasActivity extends QtActivity {
             }
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
             View decor = getWindow().getDecorView();
+            decor.setFitsSystemWindows(false);
             decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN

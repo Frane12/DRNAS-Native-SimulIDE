@@ -146,3 +146,25 @@ camera, combined pan/zoom anchor preservation, inverse moves and scale limits.
 Device checks: pan horizontally/vertically with two fingers, combine pan and
 zoom, lift/restart fingers, rotate, and repeat while a wire is unfinished. Ensure
 components remain in place, wiring/cancel still work and no notification sticks.
+
+
+## Mobile 0.6.0 — compact portrait controls and full display fit
+
+The mobile navigation uses 22px icons, 11px captions and shorter Parts/Close
+labels. Circuit controls reuse upstream actions in an adaptive grid with 40px
+high touch targets: run, pause, cancel wire, zoom +/−, fit circuit, fit selection,
+and More. At narrow widths they wrap into balanced rows instead of disappearing
+into toolbar overflow. Files, settings, recent circuits, 1:1 zoom and help remain
+in More. Width is recalculated on rotation and components dock visibility changes.
+The desktop toolbar remains intact but hidden on Android.
+
+Startup defaults to Fit entire screen, including the camera area, and does not
+reuse the old default safe-area reservation. This removes the explicit top
+cutout margin. Turning off Fit entire screen restores optional safe margins;
+scale and display fit are saved independently. Immersive mode also disables
+framework fitsSystemWindows padding.
+
+Device checks: portrait/landscape at 60%, 100%, 140% display scale; verify all
+primary controls are visible, menus open and simulation/cancel actions retain
+state. Open/close the components dock, rotate with an unfinished wire and check
+both display-fit settings. Confirm the top strip on the actual phone is gone.
