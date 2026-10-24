@@ -129,7 +129,12 @@ bool CircuitView::androidWireEvent(QMouseEvent* event)
         m_androidWireGesture = true;
         m_androidNewWireGesture = !m_circuit->is_constarted();
         m_androidWirePress = event->pos();
-        if (pin) {
+        if (pin && !m_androidNewWireGesture) {
+            // Show the destination before committing: the finger can still
+            // slide onto a different pin until it is lifted.
+            m_circuit->getNewConnector()->updateConRoute(nullptr, pin->scenePos());
+            androidWireFeedback(tr("Pin: %1 — release to connect").arg(pin->pinId()), pin);
+        } else if (pin) {
             const QString id = pin->pinId();
             if (!activatePin(this, pin)) { m_androidWireGesture=false; return false; }
             if (m_circuit->is_constarted())
