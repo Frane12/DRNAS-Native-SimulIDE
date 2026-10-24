@@ -67,10 +67,16 @@ void pinHaptic()
 void CircuitView::androidWireFeedback(const QString& message, Pin* pin)
 {
     if (!m_androidWireLabel) {
-        m_androidWireLabel = new QLabel(viewport());
+        m_androidWireLabel = new QLabel(this);
         m_androidWireLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
         m_androidWireLabel->setWordWrap(true);
         m_androidWireLabel->setStyleSheet("background:rgba(23,8,68,225); color:white; border-radius:6px; padding:8px; font-size:15px;");
+        m_androidWireHintTimer = new QTimer(this);
+        m_androidWireHintTimer->setSingleShot(true);
+        connect(m_androidWireHintTimer, &QTimer::timeout, this, [this] {
+            m_androidWireLabel->hide();
+            if (!m_androidWireGesture && m_androidPinMarker) m_androidPinMarker->hide();
+        });
         m_androidPinMarker = new QWidget(viewport());
         m_androidPinMarker->setAttribute(Qt::WA_TransparentForMouseEvents);
         m_androidPinMarker->setFixedSize(38, 38);
@@ -81,6 +87,7 @@ void CircuitView::androidWireFeedback(const QString& message, Pin* pin)
     m_androidWireLabel->adjustSize();
     m_androidWireLabel->move(8, 8);
     m_androidWireLabel->show(); m_androidWireLabel->raise();
+    m_androidWireHintTimer->start(1500);
     if (pin) {
         const QPoint point = mapFromScene(pin->scenePos());
         m_androidPinMarker->move(point-QPoint(19,19));
@@ -99,13 +106,11 @@ void CircuitView::androidCancelWire()
     m_circuit->deleteNewConnector(); // Existing cancel path also rolls back the open undo step.
     m_androidWireGesture = false;
     androidWireFeedback(tr("Wire cancelled"), nullptr);
-    QTimer::singleShot(1200, this, [this] {
-        if (m_androidWireLabel && !m_circuit->is_constarted()) m_androidWireLabel->hide();
-    });
 }
 
 bool CircuitView::androidWireEvent(QMouseEvent* event)
 {
+    if (m_androidCameraGesture) { event->accept(); return true; }
     if (!m_circuit || event->modifiers() != Qt::NoModifier) return false;
     const bool press = event->type() == QEvent::MouseButtonPress;
     const bool release = event->type() == QEvent::MouseButtonRelease;
@@ -138,14 +143,9 @@ bool CircuitView::androidWireEvent(QMouseEvent* event)
             const QString id = pin->pinId();
             if (!activatePin(this, pin)) { m_androidWireGesture=false; return false; }
             if (m_circuit->is_constarted())
-                androidWireFeedback(tr("Wire started: %1. Drag or tap another pin. Cancel stops the wire.").arg(id), pin);
+                androidWireFeedback(tr("Start: %1 — choose another pin").arg(id), pin);
             else {
                 androidWireFeedback(tr("Connected to %1").arg(id), pin);
-                QTimer::singleShot(1000, this, [this] {
-                    if (!m_circuit->is_constarted() && m_androidWireLabel) {
-                        m_androidWireLabel->hide(); m_androidPinMarker->hide();
-                    }
-                });
             }
         }
         event->accept();
@@ -170,11 +170,6 @@ bool CircuitView::androidWireEvent(QMouseEvent* event)
                 const QString id = target->pinId();
                 if (activatePin(this, target) && !m_circuit->is_constarted()) {
                     androidWireFeedback(tr("Connected to %1").arg(id), target);
-                    QTimer::singleShot(1000, this, [this] {
-                        if (!m_circuit->is_constarted() && m_androidWireLabel) {
-                            m_androidWireLabel->hide(); m_androidPinMarker->hide();
-                        }
-                    });
                 }
             } else if (!m_androidNewWireGesture || (event->pos()-m_androidWirePress).manhattanLength() >= QApplication::startDragDistance()) {
                 m_circuit->getNewConnector()->incActLine();

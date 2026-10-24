@@ -7,6 +7,7 @@ on:
       - '.github/workflows/android-arm64.yml'
       - 'scripts/**'
       - 'mobile/**'
+      - 'tests/**'
       - 'android/**'
       - 'docs/PORTING.md'
   pull_request:
@@ -14,6 +15,7 @@ on:
       - '.github/workflows/android-arm64.yml'
       - 'scripts/**'
       - 'mobile/**'
+      - 'tests/**'
       - 'android/**'
 permissions:
   contents: read
@@ -36,6 +38,8 @@ jobs:
         run: |
           bash -n scripts/android.sh
           python3 -m py_compile scripts/prepare_source.py scripts/apply_mobile.py scripts/verify_apk.py
+          g++ -std=c++11 -Wall -Wextra -pedantic -I mobile tests/touch_camera_math_test.cpp -o /tmp/simulide-camera-test
+          /tmp/simulide-camera-test
           bash scripts/android.sh source
       - name: Preserve source provenance
         uses: actions/upload-artifact@v4

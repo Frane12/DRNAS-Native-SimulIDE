@@ -7,7 +7,8 @@ import sys
 root = Path(sys.argv[1]).resolve()
 repo = Path(__file__).resolve().parent.parent
 shutil.copytree(repo / 'android', root / 'android', dirs_exist_ok=True)
-for source in (repo / 'mobile').glob('*.cpp'):
+for source in (repo / 'mobile').iterdir():
+    if source.suffix not in ('.cpp', '.h'): continue
     shutil.copy2(source, root / 'src' / source.name)
 
 
@@ -22,8 +23,8 @@ def replace(path, old, new):
 
 
 replace('SimulIDE.pri', '    OS = Android\n', '    OS = Android\n    QT += androidextras\n')
-replace('SimulIDE.pri', '    ANDROID_VERSION_NAME = 0.1.0', '    ANDROID_VERSION_NAME = 0.4.0')
-replace('SimulIDE.pri', '    ANDROID_VERSION_CODE = 1\n', '    ANDROID_VERSION_CODE = 4\n')
+replace('SimulIDE.pri', '    ANDROID_VERSION_NAME = 0.1.0', '    ANDROID_VERSION_NAME = 0.5.0')
+replace('SimulIDE.pri', '    ANDROID_VERSION_CODE = 1\n', '    ANDROID_VERSION_CODE = 5\n')
 replace('src/mainwindow.h', '        void hideGui();', '''        void hideGui();
 #ifdef Q_OS_ANDROID
         void setupAndroidUi();
@@ -64,6 +65,7 @@ replace('src/gui/circuitwidget/circuitview.h', '        void clear();', '''     
         bool androidWireEvent(QMouseEvent* event);
         void androidWireFeedback(const QString& message, Pin* pin);
         QLabel* m_androidWireLabel = nullptr;
+        QTimer* m_androidWireHintTimer = nullptr;
         QWidget* m_androidPinMarker = nullptr;
         QString m_androidTargetPin;
         QPoint m_androidWirePress;
@@ -75,6 +77,9 @@ replace('src/gui/circuitwidget/circuitview.h', '        void wheelEvent( QWheelE
         bool viewportEvent(QEvent* event) override;
         void keyPressEvent(QKeyEvent* event) override;
         qreal m_androidPinchScale = 1.5;
+        QPointF m_androidLastPinchCenter;
+        QSize m_androidGestureViewport;
+        bool m_androidCameraGesture = false;
 #endif
         void wheelEvent( QWheelEvent* event ) override;''')
 replace('src/gui/circuitwidget/circuitview.cpp', '    setResizeAnchor( AnchorUnderMouse );', '''    setResizeAnchor( AnchorUnderMouse );
@@ -151,7 +156,7 @@ print('Applied mobile fullscreen, rotation, touch density, branding and launcher
 
 # Enlarge only the Android interaction target. Leave Pin::boundingRect and
 # collision/auto-connect geometry unchanged for the circuit engine.
-replace('src/gui/circuitwidget/circuitview.h', 'class Component;', 'class Pin;\nclass QLabel;\nclass Component;')
+replace('src/gui/circuitwidget/circuitview.h', 'class Component;', 'class Pin;\nclass QLabel;\nclass QTimer;\nclass Component;')
 for method in ['mousePressEvent', 'mouseMoveEvent', 'mouseReleaseEvent']:
     anchor = f'void CircuitView::{method}( QMouseEvent* event )\n{{'
     replace('src/gui/circuitwidget/circuitview.cpp', anchor, anchor + '\n#ifdef Q_OS_ANDROID\n    if (androidWireEvent(event)) return;\n#endif')

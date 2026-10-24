@@ -122,3 +122,27 @@ Device test: tap–tap; drag–release; source tap near dense IC pins; miss a ta
 and retry; cancel after one or more corners; try occupied and incompatible bus
 pins; zoom while drawing; rotate and repeat. Verify existing connections remain
 intact after cancel. APK/static checks do not establish touch behavior on device.
+
+## Mobile 0.5.0 — two-finger camera and temporary wire messages
+
+The existing Qt pinch recognizer supplies both scale and midpoint motion. Moving
+both fingers together now pans the circuit view, while spreading/pinching zooms
+around their midpoint. Combined motion preserves the scene point under the
+fingers. Rotation rebases the gesture anchor. Completed circuit components and
+connections are not moved by this camera operation.
+
+A two-finger gesture releases the previous item grab and suppresses pending
+wire mouse releases. The unfinished wire remains available for continuing or
+Cancel. A touch-cancel/new touch sequence resets camera gesture state.
+
+Wire feedback is now a fixed overlay on the view rather than a scrolling child
+of its viewport. A single restartable 1.5-second timer hides every message,
+including wires completed through the original junction path. Messages are
+shorter; beginning camera motion hides feedback immediately. Pin highlighting
+still remains available during active finger selection.
+
+The shared camera math is tested in the source preflight for pure pan, unchanged
+camera, combined pan/zoom anchor preservation, inverse moves and scale limits.
+Device checks: pan horizontally/vertically with two fingers, combine pan and
+zoom, lift/restart fingers, rotate, and repeat while a wire is unfinished. Ensure
+components remain in place, wiring/cancel still work and no notification sticks.
