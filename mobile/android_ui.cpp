@@ -2,6 +2,7 @@
 #ifdef Q_OS_ANDROID
 #include "mainwindow.h"
 #include "circuitwidget.h"
+#include "circuit.h"
 #include "circuitview.h"
 #include "editorwindow.h"
 #include "componentlist.h"
@@ -120,10 +121,22 @@ void MainWindow::setupAndroidUi()
             auto first = bar->actions().isEmpty() ? nullptr : bar->actions().first();
             bar->insertAction(first, start); bar->insertAction(first, pause);
         }
+        auto cancelWire = new QAction(QIcon(":/remove.svg"), tr("Cancel wire"), bar);
+        cancelWire->setEnabled(false);
+        auto cancelBefore = bar->actions().size() > 2 ? bar->actions().at(2) : nullptr;
+        bar->insertAction(cancelBefore, cancelWire);
+        if (auto button = qobject_cast<QToolButton*>(bar->widgetForAction(cancelWire)))
+            button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        connect(cancelWire, &QAction::triggered, this, [] { CircuitView::self()->androidCancelWire(); });
+        auto wireState = new QTimer(bar);
+        connect(wireState, &QTimer::timeout, bar, [cancelWire] {
+            cancelWire->setEnabled(Circuit::self() && Circuit::self()->is_constarted());
+        });
+        wireState->start(100);
         auto plus = new QAction("+", bar);
         auto minus = new QAction(QString::fromUtf8("\xE2\x88\x92"), bar);
         plus->setToolTip(tr("Zoom in")); minus->setToolTip(tr("Zoom out"));
-        auto before = bar->actions().size() > 2 ? bar->actions().at(2) : nullptr;
+        auto before = bar->actions().size() > 3 ? bar->actions().at(3) : nullptr;
         bar->insertAction(before, plus); bar->insertAction(before, minus);
         connect(plus, &QAction::triggered, this, [] { CircuitView::self()->androidZoomBy(1.25); });
         connect(minus, &QAction::triggered, this, [] { CircuitView::self()->androidZoomBy(0.8); });

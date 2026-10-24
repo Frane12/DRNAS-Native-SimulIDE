@@ -22,8 +22,8 @@ def replace(path, old, new):
 
 
 replace('SimulIDE.pri', '    OS = Android\n', '    OS = Android\n    QT += androidextras\n')
-replace('SimulIDE.pri', '    ANDROID_VERSION_NAME = 0.1.0', '    ANDROID_VERSION_NAME = 0.3.0')
-replace('SimulIDE.pri', '    ANDROID_VERSION_CODE = 1\n', '    ANDROID_VERSION_CODE = 3\n')
+replace('SimulIDE.pri', '    ANDROID_VERSION_NAME = 0.1.0', '    ANDROID_VERSION_NAME = 0.4.0')
+replace('SimulIDE.pri', '    ANDROID_VERSION_CODE = 1\n', '    ANDROID_VERSION_CODE = 4\n')
 replace('src/mainwindow.h', '        void hideGui();', '''        void hideGui();
 #ifdef Q_OS_ANDROID
         void setupAndroidUi();
@@ -60,9 +60,20 @@ replace('src/gui/circuitwidget/circuitwidget.cpp', '    pauseSimAct->setStatusTi
 replace('src/gui/circuitwidget/circuitview.h', '        void clear();', '''        void clear();
 #ifdef Q_OS_ANDROID
         void androidZoomBy(qreal factor);
+        void androidCancelWire();
+        bool androidWireEvent(QMouseEvent* event);
+        void androidWireFeedback(const QString& message, Pin* pin);
+        QLabel* m_androidWireLabel = nullptr;
+        QWidget* m_androidPinMarker = nullptr;
+        QString m_androidTargetPin;
+        QPoint m_androidWirePress;
+        bool m_androidWireGesture = false;
+        bool m_androidNewWireGesture = false;
+        bool m_androidSkipWireRelease = false;
 #endif''')
 replace('src/gui/circuitwidget/circuitview.h', '        void wheelEvent( QWheelEvent* event ) override;', '''#ifdef Q_OS_ANDROID
         bool viewportEvent(QEvent* event) override;
+        void keyPressEvent(QKeyEvent* event) override;
         qreal m_androidPinchScale = 1.5;
 #endif
         void wheelEvent( QWheelEvent* event ) override;''')
@@ -137,3 +148,20 @@ replace('src/main.cpp', '    window.show();', '''#ifdef Q_OS_ANDROID
 # Same source asset powers the Android launcher and in-app welcome screen.
 shutil.copy2(repo / 'android/res/drawable-nodpi/drnas_icon.png', root / 'android/assets/drnas_icon.png')
 print('Applied mobile fullscreen, rotation, touch density, branding and launcher assets.')
+
+# Enlarge only the Android interaction target. Leave Pin::boundingRect and
+# collision/auto-connect geometry unchanged for the circuit engine.
+replace('src/gui/circuitwidget/circuitview.h', 'class Component;', 'class Pin;\nclass QLabel;\nclass Component;')
+for method in ['mousePressEvent', 'mouseMoveEvent', 'mouseReleaseEvent']:
+    anchor = f'void CircuitView::{method}( QMouseEvent* event )\n{{'
+    replace('src/gui/circuitwidget/circuitview.cpp', anchor, anchor + '\n#ifdef Q_OS_ANDROID\n    if (androidWireEvent(event)) return;\n#endif')
+replace('src/mainwindow.cpp', 'void MainWindow::keyPressEvent( QKeyEvent* event)\n{', '''void MainWindow::keyPressEvent( QKeyEvent* event)
+{
+#ifdef Q_OS_ANDROID
+    if ((event->key() == Qt::Key_Back || event->key() == Qt::Key_Escape) && Circuit::self()->is_constarted()) {
+        CircuitView::self()->androidCancelWire();
+        event->accept();
+        return;
+    }
+#endif''')
+replace('src/mainwindow.cpp', '#include \"circuitwidget.h\"', '#include \"circuitwidget.h\"\n#include \"circuitview.h\"')

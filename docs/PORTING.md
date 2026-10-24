@@ -98,3 +98,27 @@ rotate with an unsaved circuit; open/close settings, component properties and
 instruments; open/close editor/output/components; compare safe-area modes and
 verify a saved circuit remains intact. Compilation and APK audits do not verify
 these interactions.
+
+## Mobile 0.4.0 — touch wiring
+
+Android picks the closest eligible free pin within 22 viewport logical pixels.
+The radius is independent of scene zoom. The selected pin gets a cyan ring,
+a pin-name message and Android haptic feedback (subject to system settings).
+Component-body dragging remains the normal path when a body is pressed.
+
+Either tap the start and destination pins, or drag from a start pin and release
+on the highlighted destination. Releasing a source tap leaves the wire armed;
+it cannot silently choose an adjacent pin. The source pin, occupied/unused pins
+and incompatible bus pins are excluded from destination selection. Empty-space
+taps can still place route corners. Pin geometry and electrical collision /
+auto-connect rules remain upstream's originals.
+
+**Cancel wire** is ahead of zoom in the circuit toolbar and enabled only during
+an unfinished wire. Android Back / Escape can also cancel it. Both call the
+existing deleteNewConnector/cancelUndoStep path. Completed wires are unaffected.
+Pinch zoom suppresses the pending one-finger release so it cannot finish a wire.
+
+Device test: tap–tap; drag–release; source tap near dense IC pins; miss a target
+and retry; cancel after one or more corners; try occupied and incompatible bus
+pins; zoom while drawing; rotate and repeat. Verify existing connections remain
+intact after cancel. APK/static checks do not establish touch behavior on device.

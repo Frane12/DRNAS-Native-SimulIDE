@@ -4,6 +4,7 @@
 #include <QGestureEvent>
 #include <QPinchGesture>
 #include <QtMath>
+#include <QLabel>
 
 void CircuitView::androidZoomBy(qreal factor)
 {
@@ -18,7 +19,15 @@ bool CircuitView::viewportEvent(QEvent* event)
     if (event->type() == QEvent::Gesture) {
         auto gestures = static_cast<QGestureEvent*>(event);
         if (auto pinch = static_cast<QPinchGesture*>(gestures->gesture(Qt::PinchGesture))) {
-            if (pinch->state() == Qt::GestureStarted) m_androidPinchScale = transform().m11();
+            if (pinch->state() == Qt::GestureStarted) {
+                m_androidPinchScale = transform().m11();
+                if (m_androidWireGesture) {
+                    m_androidWireGesture = false;
+                    m_androidSkipWireRelease = true;
+                }
+                if (m_androidPinMarker) m_androidPinMarker->hide();
+                m_androidTargetPin.clear();
+            }
             const qreal desired = m_androidPinchScale * pinch->totalScaleFactor();
             androidZoomBy(desired / qMax(qreal(0.001), transform().m11()));
             gestures->accept(pinch);
