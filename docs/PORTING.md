@@ -156,7 +156,8 @@ high touch targets: run, pause, cancel wire, zoom +/−, fit circuit, fit select
 and More. At narrow widths they wrap into balanced rows instead of disappearing
 into toolbar overflow. Files, settings, recent circuits, 1:1 zoom and help remain
 in More. Width is recalculated on rotation and components dock visibility changes.
-The desktop toolbar remains intact but hidden on Android.
+The desktop toolbar remains intact but hidden on Android. Its simulation/error
+status label is retained below the controls and appears only when nonempty.
 
 Startup defaults to Fit entire screen, including the camera area, and does not
 reuse the old default safe-area reservation. This removes the explicit top

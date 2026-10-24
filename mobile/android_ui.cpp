@@ -132,11 +132,20 @@ void MainWindow::setupAndroidUi()
         auto more = new QMenu(tr("More circuit commands"), controls);
         const QStringList primaryNames = {"drnasStartSimulation", "drnasPauseSimulation",
                                           "drnasZoomFit", "drnasZoomSelected"};
+        QLabel* status = nullptr;
         for (auto action : bar->actions()) {
             if (primaryNames.contains(action->objectName())) continue;
             // Toolbar widget actions do not render usefully in a menu. Expose
             // their existing recent-files/help menus, omit desktop spacers.
             if (auto widgetAction = qobject_cast<QWidgetAction*>(action)) {
+                if (auto label = qobject_cast<QLabel*>(widgetAction->defaultWidget())) {
+                    status = label;
+                    status->setParent(controls);
+                    status->setObjectName("drnasCircuitStatus");
+                    status->setMaximumWidth(QWIDGETSIZE_MAX);
+                    status->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+                    status->setVisible(!status->text().trimmed().isEmpty());
+                }
                 if (auto button = qobject_cast<QToolButton*>(widgetAction->defaultWidget())) {
                     if (button->menu()) {
                         auto submenu = more->addMenu(button->toolTip());
@@ -161,7 +170,8 @@ void MainWindow::setupAndroidUi()
         addButton(cancelWire);
         connect(cancelWire, &QAction::triggered, this, [] { CircuitView::self()->androidCancelWire(); });
         auto wireState = new QTimer(controls);
-        connect(wireState, &QTimer::timeout, controls, [cancelWire] {
+        connect(wireState, &QTimer::timeout, controls, [cancelWire, status] {
+            if (status) status->setVisible(!status->text().trimmed().isEmpty());
             cancelWire->setEnabled(Circuit::self() && Circuit::self()->is_constarted());
         });
         wireState->start(100);
@@ -229,6 +239,8 @@ void MainWindow::applyAndroidLayout(bool force)
                 grid->addWidget(buttons[i], i / columns, i % columns);
             }
             for (int column = 0; column < columns; ++column) grid->setColumnStretch(column, 1);
+            if (auto status = controls->findChild<QLabel*>("drnasCircuitStatus"))
+                grid->addWidget(status, rows, 0, 1, columns);
         }
     }
     // Full fit is the default; optional cutout margins are set at startup.
