@@ -4,6 +4,7 @@
 #include "circuit.h"
 #include "pin.h"
 #include "connector.h"
+#include "connectorline.h"
 #include <QApplication>
 #include <QGraphicsSceneMouseEvent>
 #include <QLabel>
@@ -115,8 +116,13 @@ bool CircuitView::androidWireEvent(QMouseEvent* event)
         event->accept(); return true;
     }
     if (press) {
+        m_androidSkipWireRelease = false;
         Pin* pin = nearestFreePin(this, event->pos());
         if (!pin && !m_circuit->is_constarted()) return false; // Normal component dragging.
+        // Existing wire junctions keep their upstream click/split behavior.
+        // Do not turn a tap on an existing wire into an empty route corner.
+        auto hit = itemAt(event->pos());
+        if (!pin && hit && hit->type() == ConnectorLine::Type) return false;
         // A deliberate press on the component body still moves the component.
         if (pin && !m_circuit->is_constarted() && itemAt(event->pos()) == pin->component()
             && !pin->contains(pin->mapFromScene(mapToScene(event->pos())))) return false;
